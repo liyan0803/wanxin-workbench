@@ -204,9 +204,7 @@ function marioCoin(){const a=ac();if(!a)return;const t0=a.currentTime;
   [[987.77,0,0.09],[1318.51,0.085,0.55]].forEach(function(p){const hz=p[0],st=p[1],dur=p[2];
     const o=a.createOscillator(),g=a.createGain();o.type='square';o.frequency.value=hz;o.connect(g);g.connect(a.destination);
     const s=t0+st;g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(.32,s+.012);g.gain.exponentialRampToValueAtTime(.0001,s+dur);o.start(s);o.stop(s+dur+.03);});}
-function sayMario(){if(!('speechSynthesis' in window))return;try{const u=new SpeechSynthesisUtterance('Super Mario');u.lang='en-US';u.pitch=1.1;u.rate=1.0;
-  const vs=speechSynthesis.getVoices()||[];const v=vs.find(function(x){return /en[-_]US/i.test(x.lang);})||vs.find(function(x){return /^en/i.test(x.lang);});if(v)u.voice=v;
-  speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+/* 语音功能已关闭（打卡只保留马里奥金币音效） */
 function arpeggio(){marioCoin();}
 function sparkleAt(rect){if(!rect)return;const cx=rect.left+rect.width/2, cy=rect.top+rect.height/2;
   for(let i=0;i<9;i++){const s=document.createElement('div');s.className='sp';s.textContent=['✨','⭐','💫','🌟'][i%4];
