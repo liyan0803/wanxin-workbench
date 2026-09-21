@@ -225,12 +225,15 @@ function tvAllowed(){const d=new Date(),wd=d.getDay();if(wd===6)return true;if(w
 function award(n){state.points+=n;state.dailyEarned=(state.dailyEarned||0)+n;}
 function complete(id,kind){const map=kind==='weekly'?state.weeklyDone:state.dailyDone;const k=kind+':'+id;
   if(!state.awarded[k]){state.awarded[k]=true;award(PTS);addLog('完成：'+nameOf(id)+' +'+PTS);}map[id]=true;delete ready[id];return true;}
-function undo(id,kind){const map=kind==='weekly'?state.weeklyDone:state.dailyDone;delete map[id];}
+function undo(id,kind){const map=kind==='weekly'?state.weeklyDone:state.dailyDone;const k=kind+':'+id;
+  if(!map[id])return;delete map[id];
+  if(state.awarded[k]){delete state.awarded[k];state.points=Math.max(0,state.points-PTS);state.dailyEarned=Math.max(0,(state.dailyEarned||0)-PTS);toast('已取消打卡 -'+PTS+' 分');}}
 function toggle(id,kind,rect){const map=kind==='weekly'?state.weeklyDone:state.dailyDone;
   if(map[id]){undo(id,kind);}
   else{const ok=complete(id,kind);if(ok){arpeggio();sparkleAt(rect);toast('🎉 打卡 +'+PTS+' 分  '+PRAISE[Math.floor(Math.random()*PRAISE.length)]);}}
   save();render();}
-function pickExercise(id,rect){if(state.exercise===id){state.exercise='';}
+function pickExercise(id,rect){if(state.exercise===id){state.exercise='';
+    if(state.awarded['yd']){delete state.awarded['yd'];state.points=Math.max(0,state.points-PTS);state.dailyEarned=Math.max(0,(state.dailyEarned||0)-PTS);toast('已取消运动打卡 -'+PTS+' 分');}}
   else{if(!state.awarded['yd']){state.awarded['yd']=true;award(PTS);addLog('运动：'+nameOf(id)+' +'+PTS);arpeggio();sparkleAt(rect);toast('✓ 运动完成 +'+PTS+' 分');}state.exercise=id;}
   save();render();}
 function addLog(t){state.log.unshift({t,when:new Date().toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})});state.log=state.log.slice(0,40);}
