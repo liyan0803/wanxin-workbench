@@ -120,6 +120,9 @@ h1{font-size:19px;font-weight:900;letter-spacing:.3px}
       <div class="muted" style="margin-top:9px">每完成一项任务 +5 分 · 10 分 = 1 元 · 5 分 = 1 分钟电视</div>
     </div>
     <div id="view"></div>
+    <div class="muted" style="text-align:center;margin:16px 0 2px" id="verBar">版本 v9 ·
+      <a href="javascript:void(0)" id="btnUpdate" style="color:var(--p2);font-weight:900;text-decoration:underline">🔄 更新到最新版</a>
+    </div>
   </main>
 </div>
 <div id="toast"></div>
@@ -344,7 +347,15 @@ function exportData(){try{const blob=new Blob([JSON.stringify(state)],{type:'app
 document.querySelectorAll('.rail button').forEach(b=>b.onclick=()=>{stopTimer();cur=b.dataset.sec;render();});
 
 /* ============ 启动 ============ */
-if('serviceWorker' in navigator){window.addEventListener('load',function(){try{navigator.serviceWorker.register('sw.js?v=2').catch(function(){});}catch(e){}});}
+function forceUpdate(){
+  try{
+    if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){try{r.unregister();}catch(e){}});});}
+    if(window.caches&&caches.keys){caches.keys().then(function(ks){ks.forEach(function(k){try{caches.delete(k);}catch(e){}});});}
+  }catch(e){}
+  setTimeout(function(){try{location.replace(location.pathname+'?v='+Date.now());}catch(e){location.reload();}},500);
+}
+(function(){var bu=document.getElementById('btnUpdate');if(bu)bu.onclick=forceUpdate;})();
+if('serviceWorker' in navigator){window.addEventListener('load',function(){try{navigator.serviceWorker.register('sw.js?v=9').catch(function(){});}catch(e){}});}
 lanterns();load();render();
 </script>
 </body>
