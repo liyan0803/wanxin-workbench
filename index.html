@@ -106,6 +106,7 @@ h1{font-size:19px;font-weight:900;letter-spacing:.3px}
 .hw-stat.good{color:#3f8a5c}
 .hw-stat.bad{color:#d9534f}
 .hw-bonus{display:inline-block;margin-top:10px;background:linear-gradient(135deg,var(--gold),#ffe08a);color:#5b3a20;font-weight:900;font-size:14.5px;padding:7px 16px;border-radius:99px}
+.hw-bonus.neg{background:linear-gradient(135deg,#f7b6b0,#ef867d);color:#fff}
 .hw-btn{font-size:16.5px;padding:13px 26px}
 .hw-btn.ok{background:linear-gradient(135deg,var(--green),#8ecb91);color:#204d33}
 </style>
@@ -136,10 +137,10 @@ h1{font-size:19px;font-weight:900;letter-spacing:.3px}
         <div class="pill"><b id="pToday">0</b><span>📅 今日获得</span></div>
         <div class="pill"><b id="pGift">0</b><span>🎟️ 礼物券</span></div>
       </div>
-      <div class="muted" style="margin-top:9px">每完成一项任务 +5 分 · 10 分 = 1 元 · 5 分 = 1 分钟电视</div>
+      <div class="muted" style="margin-top:9px">每完成一项任务 +5 分（早睡/早起 +20）· 作业按时完成另有奖惩 · 10 分 = 1 元 · 5 分 = 1 分钟电视</div>
     </div>
     <div id="view"></div>
-    <div class="muted" style="text-align:center;margin:16px 0 2px" id="verBar">版本 v10 ·
+    <div class="muted" style="text-align:center;margin:16px 0 2px" id="verBar">版本 v11 ·
       <a href="javascript:void(0)" id="btnUpdate" style="color:var(--p2);font-weight:900;text-decoration:underline">🔄 更新到最新版</a>
     </div>
   </main>
@@ -171,7 +172,7 @@ const SECS=[
  {key:'piano',e:'🎹',name:'钢琴',daily:[
    {id:'gq1',n:'乐理学习',m:20},{id:'gq2',n:'指法练习',m:10},{id:'gq3',n:'乐曲练习',m:20}],weekly:[]},
  {key:'habit',e:'🌙',name:'习惯',daily:[
-   {id:'hb1',n:'早睡（10 点前入睡）'},{id:'hb8',n:'早起（7 点起床）'},{id:'hb2',n:'早上主动刷牙'},{id:'hb3',n:'晚上主动刷牙'},
+   {id:'hb1',n:'早睡（10 点前入睡）',p:20},{id:'hb8',n:'早起（7 点起床）',p:20},{id:'hb2',n:'早上主动刷牙'},{id:'hb3',n:'晚上主动刷牙'},
    {id:'hb4',n:'主动找姑奶奶洗澡'},{id:'hb5',n:'自己穿衣'},{id:'hb6',n:'帮忙做家务'},{id:'hb7',n:'吃饭不挑食'}],weekly:[]},
  {key:'xingge',e:'💖',name:'性格',daily:[
    {id:'xg1',n:'不哭闹'},{id:'xg2',n:'不乱发脾气'},{id:'xg3',n:'不说谎'}],weekly:[]},
@@ -181,6 +182,7 @@ const SECS=[
 const PETS=['🦎 帕斯卡','🐴 马克西姆斯','🐸 小跳蛙'];
 const CLOTHES=['','🎀','👑','🌸','🧣','✨'];
 const PTS=5, MIN_DAILY=50, PET_PRICE=100, FEED=10, BATH=10, CLOTHES_COST=10, SOOTHE=10, COMPANION=10, GIFT_COST=20, CASH_PER=10, TV_PER=5;
+const HW_BONUS=20, HW_PENALTY=20;
 const PRAISE=['太棒了！🍄','你真厉害！⭐','马里奥为你加油！🍄','收集到金币啦！🪙','继续闯关！💪'];
 const HW_ITEMS=[{id:'yw',n:'语文作业'},{id:'sx',n:'数学作业'},{id:'yy',n:'英语作业'},{id:'qt',n:'订正 / 其他'}];
 
@@ -249,14 +251,15 @@ function tvAllowed(){const d=new Date(),wd=d.getDay();if(wd===6)return true;if(w
 
 /* ============ 积分 & 打卡 ============ */
 function award(n){state.points+=n;state.dailyEarned=(state.dailyEarned||0)+n;}
-function complete(id,kind){const map=kind==='weekly'?state.weeklyDone:state.dailyDone;const k=kind+':'+id;
-  if(!state.awarded[k]){state.awarded[k]=true;award(PTS);addLog('完成：'+nameOf(id)+' +'+PTS);}map[id]=true;delete ready[id];return true;}
-function undo(id,kind){const map=kind==='weekly'?state.weeklyDone:state.dailyDone;const k=kind+':'+id;
+function ptsOf(id){for(const s of SECS){for(const it of (s.daily||[]))if(it.id===id)return it.p||PTS;for(const it of (s.weekly||[]))if(it.id===id)return it.p||PTS;}return PTS;}
+function complete(id,kind){const map=kind==='weekly'?state.weeklyDone:state.dailyDone;const k=kind+':'+id;const pts=ptsOf(id);
+  if(!state.awarded[k]){state.awarded[k]=true;award(pts);addLog('完成：'+nameOf(id)+' +'+pts);}map[id]=true;delete ready[id];return true;}
+function undo(id,kind){const map=kind==='weekly'?state.weeklyDone:state.dailyDone;const k=kind+':'+id;const pts=ptsOf(id);
   if(!map[id])return;delete map[id];
-  if(state.awarded[k]){delete state.awarded[k];state.points=Math.max(0,state.points-PTS);state.dailyEarned=Math.max(0,(state.dailyEarned||0)-PTS);toast('已取消打卡 -'+PTS+' 分');}}
+  if(state.awarded[k]){delete state.awarded[k];state.points=Math.max(0,state.points-pts);state.dailyEarned=Math.max(0,(state.dailyEarned||0)-pts);toast('已取消打卡 -'+pts+' 分');}}
 function toggle(id,kind,rect){const map=kind==='weekly'?state.weeklyDone:state.dailyDone;
   if(map[id]){undo(id,kind);}
-  else{const ok=complete(id,kind);if(ok){arpeggio();sparkleAt(rect);toast('🎉 打卡 +'+PTS+' 分  '+PRAISE[Math.floor(Math.random()*PRAISE.length)]);}}
+  else{const ok=complete(id,kind);if(ok){arpeggio();sparkleAt(rect);toast('🎉 打卡 +'+ptsOf(id)+' 分  '+PRAISE[Math.floor(Math.random()*PRAISE.length)]);}}
   save();render();}
 function pickExercise(id,rect){if(state.exercise===id){state.exercise='';
     if(state.awarded['yd']){delete state.awarded['yd'];state.points=Math.max(0,state.points-PTS);state.dailyEarned=Math.max(0,(state.dailyEarned||0)-PTS);toast('已取消运动打卡 -'+PTS+' 分');}}
@@ -295,13 +298,14 @@ function taskHTML(it,kind){const map=kind==='weekly'?state.weeklyDone:state.dail
   let tbtn='';
   if(it.m)tbtn='<button class="tbtn" data-timer="'+it.id+'" data-min="'+it.m+'" data-kind="'+kind+'">'+(done?'✓':'▶ '+it.m+' 分')+'</button>';
   return '<div class="'+cls+'" data-id="'+it.id+'" data-kind="'+kind+'"><div class="ck" data-toggle="'+it.id+'">'+(done?'✓':'')+'</div>'+
-    '<div class="nm">'+esc(it.n)+(it.m?'<span class="meta">建议 '+it.m+' 分钟</span>':'')+'</div>'+(tbtn?tbtn:'<div class="rw">+'+PTS+'</div>')+'</div>';}
+    '<div class="nm">'+esc(it.n)+(it.m?'<span class="meta">建议 '+it.m+' 分钟</span>':'')+'</div>'+(tbtn?tbtn:'<div class="rw">+'+(it.p||PTS)+'</div>')+'</div>';}
 function renderStudy(sec){
   let h='';
   if(sec.choose){h+='<div class="sec-title">🏃 每日运动 <span class="tag">4 选 1</span></div><div class="grp">';
     sec.daily.forEach(it=>{const on=state.exercise===it.id;h+='<div class="opt'+(on?' on':'')+'" data-ex="'+it.id+'"><div class="ck">'+(on?'✓':'')+'</div><div class="nm">'+esc(it.n)+'</div><div class="rw" style="font-size:12px;font-weight:900;color:var(--gold2)">+'+PTS+'</div></div>';});
     h+='</div><div class="pbar"><i style="width:'+(state.exercise?100:0)+'%"></i></div><div class="pbar-txt">运动进度 '+(state.exercise?100:0)+'%</div>';return h;}
-  h+='<div class="sec-title">📅 每日任务 <span class="tag">完成 +'+PTS+'</span></div><div class="grp">';
+  const hasCustom=(sec.daily||[]).some(it=>it.p);
+  h+='<div class="sec-title">📅 每日任务 <span class="tag">'+(hasCustom?('完成 +'+PTS+' · 早睡/早起 +20'):('完成 +'+PTS))+'</span></div><div class="grp">';
   (sec.daily||[]).forEach(it=>h+=taskHTML(it,'daily'));h+='</div>';
   const tot=(sec.daily||[]).length,dn=(sec.daily||[]).filter(it=>state.dailyDone[it.id]).length,pct=tot?Math.round(dn/tot*100):0;
   h+='<div class="pbar"><i style="width:'+pct+'%"></i></div><div class="pbar-txt">'+sec.name+'进度 '+dn+'/'+tot+'（'+pct+'%）</div>';
@@ -313,7 +317,7 @@ function renderStudy(sec){
 function renderReward(){
   const allowed=tvAllowed();
   let h='<div class="sec-title">🎁 我的奖励</div>';
-  h+='<div class="card"><h3>🌟 积分：'+state.points+' 分（≈ ¥'+(state.points/CASH_PER).toFixed(1)+'）</h3><div class="muted">每完成一项任务 +'+PTS+' 分。<br>'+CASH_PER+' 分 = 1 元现金 · '+GIFT_COST+' 分 = 1 张礼物券 🎟️ · '+TV_PER+' 分 = 1 分钟电视 📺</div></div>';
+  h+='<div class="card"><h3>🌟 积分：'+state.points+' 分（≈ ¥'+(state.points/CASH_PER).toFixed(1)+'）</h3><div class="muted">每完成一项任务 +'+PTS+' 分（早睡/早起 +20）。<br>'+CASH_PER+' 分 = 1 元现金 · '+GIFT_COST+' 分 = 1 张礼物券 🎟️ · '+TV_PER+' 分 = 1 分钟电视 📺</div></div>';
   h+='<div class="card"><h3>💵 兑换现金</h3><div class="row"><button class="btn sm" data-cash="1">换 1 元（'+CASH_PER+'分）</button><button class="btn sm" data-cash="5">换 5 元（'+(CASH_PER*5)+'分）</button><button class="btn sm" data-cash="10">换 10 元（'+(CASH_PER*10)+'分）</button></div></div>';
   h+='<div class="card"><h3>🎟️ 礼物券</h3><div class="row"><button class="btn sm" data-gift="1">换 1 张礼物券（'+GIFT_COST+'分）</button></div><div class="muted" style="margin-top:8px">已有礼物券：'+state.gift+' 张 · 已换现金：¥'+state.cash+'</div></div>';
   h+='<div class="card"><h3>📺 电视时间</h3><div class="muted" style="margin-bottom:8px">'+TV_PER+' 积分 = 1 分钟 · '+(allowed?'✅ 现在可以兑换（周五晚上 / 周六）':'⛔ 只能在周五晚上和周六兑换')+'</div>'+
@@ -346,7 +350,11 @@ function renderHistory(){
 function hwTargetTs(){const a=(state.hw.target||'20:30').split(':');const d=new Date();d.setHours(+a[0]||20,+a[1]||30,0,0);return d.getTime();}
 function fmtDur(ms){const s=Math.max(0,Math.floor(ms/1000)),m=Math.floor(s/60),q=s%60;return (m<10?'0':'')+m+':'+(q<10?'0':'')+q;}
 function hhmm(ts){const d=new Date(ts);return pad(d.getHours())+':'+pad(d.getMinutes());}
-function hwBonus(earlyMin){if(earlyMin>=20)return 15;if(earlyMin>=5)return 10;if(earlyMin>=-10)return 8;return 3;}
+function hwReward(endTs){const tgt=hwTargetTs();if(endTs<=tgt)return HW_BONUS;if(endTs<=tgt+60*60000)return 0;return -HW_PENALTY;}
+function hwRuleText(){const a=(state.hw.target||'20:30').split(':');const t=pad(+a[0]||20)+':'+pad(+a[1]||30);const d2=new Date(hwTargetTs()+60*60000);const t2=pad(d2.getHours())+':'+pad(d2.getMinutes());
+  return '⏰ '+t+' 前写完 +'+HW_BONUS+' 分 · '+t+'–'+t2+' 完成不加分 · '+t2+' 后完成扣 '+HW_PENALTY+' 分。';}
+function hwRewardText(d){const a=(state.hw.target||'20:30').split(':');const t=pad(+a[0]||20)+':'+pad(+a[1]||30);const d2=new Date(hwTargetTs()+60*60000);const t2=pad(d2.getHours())+':'+pad(d2.getMinutes());
+  return d>0?('🌟 '+t+' 前完成，奖励 +'+d+' 分！'):(d<0?('⏰ 超过 '+t2+' 完成，扣 '+(-d)+' 分'):('⏱️ 按时完成（'+t+'–'+t2+'），本项不加分'));}
 function hwLeftText(){const lm=Math.round((hwTargetTs()-Date.now())/60000);return lm>0?('距离目标还有 <b>'+lm+'</b> 分钟'):('⏰ 已超出目标 <b>'+(-lm)+'</b> 分钟，加油！');}
 function hwStartHint(){const d=new Date(hwTargetTs()-60*60000);return '建议 '+pad(d.getHours())+':'+pad(d.getMinutes())+' 开始写作业';}
 function renderHwStats(){
@@ -359,7 +367,7 @@ function renderHomework(){
   const hw=state.hw,tgt=hw.target||'20:30';
   let h='<div class="sec-title">⏰ 今日作业 <span class="tag">按时写完有奖励</span></div>';
   h+='<div class="card"><div class="hw-tgt-row"><span>今晚目标：</span><b>'+tgt+' 前写完</b><input type="time" id="hwTarget" value="'+tgt+'"></div>'+
-     '<div class="muted" style="margin-top:8px">'+hwStartHint()+'。按时完成有「按时奖励 🌟」，完成越早，奖励越多。</div></div>';
+     '<div class="muted" style="margin-top:8px">'+hwStartHint()+'。'+hwRuleText()+'</div></div>';
   if(!hw.startTs&&!hw.endTs){
     h+='<div class="card hw-status"><div class="hw-big">还没开始写作业</div><div class="muted" style="margin-top:6px">现在 '+hhmm(Date.now())+' · 点击下面按钮开始计时</div>'+
        '<div class="row" style="justify-content:center;margin-top:12px"><button class="btn hw-btn" id="hwStart">🚀 开始写作业</button></div></div>';
@@ -372,7 +380,7 @@ function renderHomework(){
     h+='<div class="card hw-status done"><div class="hw-big">🎉 写完啦！</div>'+
        '<div class="hw-stat">用时 <b>'+used+'</b> 分钟 · 完成于 <b>'+hhmm(hw.endTs)+'</b></div>'+
        '<div class="hw-stat '+(early>=0?'good':'bad')+'">'+(early>=0?('👍 比目标提前 '+early+' 分钟'):('⏰ 超出目标 '+(-early)+' 分钟'))+'</div>'+
-       '<div class="hw-bonus">🌟 按时奖励 +'+hw.bonus+' 分</div>'+
+       '<div class="hw-bonus'+(hw.bonus<0?' neg':'')+'">'+hwRewardText(hw.bonus)+'</div>'+
        '<div class="row" style="justify-content:center;margin-top:12px"><button class="btn ghost sm" id="hwReset">重新开始</button></div></div>';
   }
   h+='<div class="sec-title">📋 作业清单 <span class="tag">写完了勾一下</span></div><div class="grp">';
@@ -386,12 +394,14 @@ function hwFinish(){
   const hw=state.hw;if(!hw.startTs||hw.endTs)return;
   hw.endTs=Date.now();
   const early=Math.round((hwTargetTs()-hw.endTs)/60000);
-  hw.early=early;hw.bonus=hwBonus(early);
-  if(!hw.bonusClaimed){hw.bonusClaimed=true;if(hw.bonus>0){award(hw.bonus);addLog('作业按时奖励 +'+hw.bonus);}}
+  hw.early=early;hw.bonus=hwReward(hw.endTs);
+  if(!hw.bonusClaimed){hw.bonusClaimed=true;const bd=hw.bonus;
+    if(bd>0){award(bd);addLog('作业提前完成 +'+bd);}
+    else if(bd<0){state.points=Math.max(0,state.points+bd);state.dailyEarned=Math.max(0,(state.dailyEarned||0)+bd);addLog('作业完成太晚 '+bd);}}
   state.hwStats[today()]={used:Math.round((hw.endTs-hw.startTs)/60000),end:hhmm(hw.endTs),on:early>=0};
   const el=document.getElementById('hwDone');
   arpeggio();sparkleAt(el?el.getBoundingClientRect():null);
-  toast('🎉 作业写完啦！按时奖励 +'+hw.bonus+' 分');
+  toast(hw.bonus>0?('🎉 作业提前完成 +'+hw.bonus+' 分！'):(hw.bonus<0?('⏰ 完成太晚，扣 '+(-hw.bonus)+' 分'):'✅ 作业完成，继续加油！'));
   save();render();
 }
 function hwTick(){
@@ -407,9 +417,9 @@ setInterval(hwTick,1000);
 /* ============ 事件绑定 ============ */
 function bindView(){
   document.querySelectorAll('[data-toggle]').forEach(el=>{const id=el.dataset.toggle;const host=el.closest('.task');const kind=host?host.dataset.kind:'daily';
-    el.onclick=()=>{const rect=(host||el).getBoundingClientRect();if(ready[id]){const ok=complete(id,kind);if(ok){arpeggio();sparkleAt(rect);toast('🎉 +'+PTS+' 分');}save();render();return;}toggle(id,kind,rect);};});
+    el.onclick=()=>{const rect=(host||el).getBoundingClientRect();if(ready[id]){const ok=complete(id,kind);if(ok){arpeggio();sparkleAt(rect);toast('🎉 +'+ptsOf(id)+' 分');}save();render();return;}toggle(id,kind,rect);};});
   document.querySelectorAll('[data-timer]').forEach(b=>{const id=b.dataset.timer,min=+b.dataset.min,kind=b.dataset.kind;
-    b.onclick=()=>{if(ready[id]){const rect=b.closest('.task').getBoundingClientRect();const ok=complete(id,kind);if(ok){arpeggio();sparkleAt(rect);toast('🎉 打卡 +'+PTS+' 分');}save();render();return;}
+    b.onclick=()=>{if(ready[id]){const rect=b.closest('.task').getBoundingClientRect();const ok=complete(id,kind);if(ok){arpeggio();sparkleAt(rect);toast('🎉 打卡 +'+ptsOf(id)+' 分');}save();render();return;}
       if(activeTimer&&activeTimer.id===id){stopTimer();renderTimers();return;}
       if(state.dailyDone[id]||state.weeklyDone[id])return;startTimer(id,min);};});
   document.querySelectorAll('[data-ex]').forEach(el=>el.onclick=()=>pickExercise(el.dataset.ex,el.getBoundingClientRect()));
@@ -449,7 +459,7 @@ function forceUpdate(){
   setTimeout(function(){try{location.replace(location.pathname+'?v='+Date.now());}catch(e){location.reload();}},500);
 }
 (function(){var bu=document.getElementById('btnUpdate');if(bu)bu.onclick=forceUpdate;})();
-if('serviceWorker' in navigator){window.addEventListener('load',function(){try{navigator.serviceWorker.register('sw.js?v=10').catch(function(){});}catch(e){}});}
+if('serviceWorker' in navigator){window.addEventListener('load',function(){try{navigator.serviceWorker.register('sw.js?v=11').catch(function(){});}catch(e){}});}
 lanterns();load();render();
 </script>
 </body>
